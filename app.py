@@ -113,7 +113,7 @@ Policy text:
 # Routes
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory('.', 'index_new.html')
 
 @app.route('/api/upload', methods=['POST'])
 def upload():

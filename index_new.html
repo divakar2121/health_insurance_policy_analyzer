@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insurance Policy Analyzer - Client & Lawyer Handshake</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+    }
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .handshake-container {
+      position: relative;
+      width: 400px;
+      height: 300px;
+      margin: 0 auto;
+    }
+    .hand {
+      position: absolute;
+      width: 120px;
+      height: 160px;
+      transition: all 0.5s ease;
+    }
+    .client-hand {
+      left: 50px;
+      top: 80px;
+    }
+    .lawyer-hand {
+      right: 50px;
+      top: 80px;
+      transform: scaleX(-1);
+    }
+    .handshake-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0) 70%);
+      opacity: 0;
+      transition: all 0.8s ease;
+    }
+    .handshake-ring.active {
+      opacity: 1;
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+      50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.4; }
+    }
+    .glow-text {
+      text-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4);
+    }
+    .loading-spinner {
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .chat-bot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+    .chat-window {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      width: 400px;
+      max-height: 500px;
+      display: none;
+    }
+    .chat-window.open { display: block; }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen overflow-hidden">
+  <canvas id="particleCanvas"></canvas>
+  
+  <div class="content-wrapper">
+    <div class="container mx-auto px-4 py-12">
+      <!-- Header with Handshake Animation -->
+      <div class="text-center mb-12">
+        <div class="handshake-container mb-8" id="handshakeContainer">
+          <canvas id="handshakeCanvas" width="400" height="300"></canvas>
+        </div>
+        
+        <h1 class="text-5xl font-bold text-white mb-4 glow-text" id="mainTitle">
+          Insurance Policy Analyzer
+        </h1>
+        <p class="text-blue-200 text-xl mb-8">AI-Powered Legal Compliance Analysis</p>
+        
+        <div class="flex justify-center gap-8 mb-12">
+          <div class="glass rounded-xl p-6 text-center">
+            <div class="text-4xl mb-2">👤</div>
+            <h3 class="text-white font-semibold">Client</h3>
+            <p class="text-blue-200 text-sm">Upload Policy</p>
+          </div>
+          <div class="glass rounded-xl p-6 text-center">
+            <div class="text-4xl mb-2">🤝</div>
+            <h3 class="text-white font-semibold">Handshake</h3>
+            <p class="text-blue-200 text-sm">AI Analysis</p>
+          </div>
+          <div class="glass rounded-xl p-6 text-center">
+            <div class="text-4xl mb-2">⚖️</div>
+            <h3 class="text-white font-semibold">Lawyer</h3>
+            <p class="text-blue-200 text-sm">Legal Expert</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Section -->
+      <div class="max-w-2xl mx-auto mb-12">
+        <div class="glass rounded-2xl p-12 text-center">
+          <div class="mb-4">
+            <svg class="mx-auto h-16 w-16 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-2">Upload Your Insurance Policy</h3>
+          <p class="text-blue-200 mb-4">Drag and drop your PDF or click to select</p>
+          
+          <select id="policyType" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 mb-4 text-white">
+            <option value="health">Health Insurance</option>
+            <option value="life">Life Insurance</option>
+            <option value="accident">Accident Insurance</option>
+          </select>
+          
+          <input type="file" id="fileInput" accept=".pdf" class="hidden">
+          <button id="uploadBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+            Upload & Analyze
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="hidden text-center py-8">
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <p class="text-white mt-4">Analyzing your policy...</p>
+      </div>
+
+      <!-- Error -->
+      <div id="error" class="hidden max-w-2xl mx-auto mb-8 p-4 bg-red-500/20 border border-red-500/50 text-red-200 rounded-lg"></div>
+
+      <!-- Results -->
+      <div id="results" class="hidden">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold text-white mb-6">Analysis Results</h2>
+          <div id="questionsList" class="space-y-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Bot -->
+  <div class="chat-bot">
+    <div id="chatWindow" class="chat-window">
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="bg-blue-600 p-4 flex justify-between items-center">
+          <div>
+            <h3 class="text-white font-bold">Legal AI Advocate</h3>
+            <p class="text-blue-200 text-sm">Expert in Insurance & IPC</p>
+          </div>
+          <button onclick="toggleChat()" class="text-white hover:text-gray-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div id="chatMessages" class="h-80 overflow-y-auto p-4 space-y-4 bg-black/20">
+          <div class="flex items-start gap-2">
+            <div class="bg-blue-500/30 rounded-lg p-3 max-w-[80%]">
+              <p class="text-white text-sm">Hello! I'm your AI Legal Advocate. Ask me anything about insurance law!</p>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-white/10 p-4 bg-black/20">
+          <form id="chatForm" class="flex gap-2">
+            <input type="text" id="chatInput" placeholder="Ask your legal question..." class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <button onclick="toggleChat()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+    </button>
+  </div>
+
+  <script>
+    // ==================== PARTICLE SYSTEM ====================
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let mouseX = 0, mouseY = 0;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.opacity = Math.random() * 0.5 + 0.2;
+        this.brightness = Math.random() * 0.5 + 0.5;
+        this.hue = Math.random() * 60 + 200; // Blue range
+        this.life = Math.random() * 100 + 50;
+        this.maxLife = this.life;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life--;
+        
+        // Mouse attraction
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 200) {
+          this.brightness = Math.min(1, this.brightness + 0.02);
+          this.speedX += dx * 0.0001;
+          this.speedY += dy * 0.0001;
+        }
+        
+        if (this.life <= 0 || this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
+        gradient.addColorStop(0, `hsla(${this.hue}, 80%, 70%, ${this.brightness})`);
+        gradient.addColorStop(0.5, `hsla(${this.hue}, 70%, 50%, ${this.brightness * 0.5})`);
+        gradient.addColorStop(1, `hsla(${this.hue}, 60%, 30%, 0)`);
+        
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+    }
+
+    // Initialize particles
+    for (let i = 0; i < 150; i++) {
+      particles.push(new Particle());
+    }
+
+    // Mouse tracking
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    // Animation loop
+    function animate() {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      
+      // Create connections
+      particles.forEach((p1, i) => {
+        particles.slice(i + 1).forEach(p2 => {
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(59, 130, 246, ${0.2 * (1 - dist/100) * ((p1.brightness + p2.brightness) / 2)})`;
+            ctx.stroke();
+          }
+        });
+      });
+      
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ==================== HANDSHAKE ANIMATION ====================
+    const handshakeCanvas = document.getElementById('handshakeCanvas');
+    const hctx = handshakeCanvas.getContext('2d');
+    let handshakePhase = 0;
+    let handsApproaching = false;
+    let handsShaking = false;
+    let particles = [];
+
+    class HandshakeParticle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 3;
+        this.vy = (Math.random() - 0.5) * 3;
+        this.life = 1;
+        this.size = Math.random() * 4 + 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= 0.02;
+      }
+      draw() {
+        hctx.beginPath();
+        hctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        hctx.fillStyle = `rgba(59, 130, 246, ${this.life})`;
+        hctx.fill();
+      }
+    }
+
+    function drawHand(x, y, flipped = false) {
+      hctx.save();
+      hctx.translate(x, y);
+      if (flipped) hctx.scale(-1, 1);
+      
+      // Hand drawing
+      hctx.fillStyle = 'rgba(255, 220, 180, 0.9)';
+      hctx.strokeStyle = 'rgba(200, 150, 100, 0.8)';
+      hctx.lineWidth = 2;
+      
+      // Palm
+      hctx.beginPath();
+      hctx.ellipse(0, 30, 35, 45, 0, 0, Math.PI * 2);
+      hctx.fill();
+      hctx.stroke();
+      
+      // Fingers
+      const fingerPositions = [
+        {x: -25, y: -30, angle: -0.3},
+        {x: -8, y: -45, angle: 0},
+        {x: 10, y: -45, angle: 0},
+        {x: 28, y: -30, angle: 0.3}
+      ];
+      
+      fingerPositions.forEach(fp => {
+        hctx.save();
+        hctx.translate(fp.x, fp.y);
+        hctx.rotate(fp.angle);
+        hctx.beginPath();
+        hctx.ellipse(0, -25, 8, 30, 0, 0, Math.PI * 2);
+        hctx.fill();
+        hctx.stroke();
+        hctx.restore();
+      });
+      
+      // Thumb
+      hctx.save();
+      hctx.translate(-35, 10);
+      hctx.rotate(-0.5);
+      hctx.beginPath();
+      hctx.ellipse(0, -20, 10, 25, 0, 0, Math.PI * 2);
+      hctx.fill();
+      hctx.stroke();
+      hctx.restore();
+      
+      // Sleeve
+      hctx.fillStyle = 'rgba(30, 58, 138, 0.8)';
+      hctx.fillRect(-40, 50, 80, 60);
+      
+      hctx.restore();
+    }
+
+    let clientX = 80, lawyerX = 320;
+    let clientY = 150, lawyerY = 150;
+
+    function animateHandshake() {
+      hctx.clearRect(0, 0, 400, 300);
+      
+      // Draw background glow
+      const gradient = hctx.createRadialGradient(200, 150, 0, 200, 150, 150);
+      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
+      gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+      hctx.fillStyle = gradient;
+      hctx.fillRect(0, 0, 400, 300);
+      
+      if (handsApproaching) {
+        if (clientX < 150) clientX += 3;
+        if (lawyerX > 250) lawyerX -= 3;
+        
+        if (clientX >= 150 && lawyerX <= 250) {
+          handsApproaching = false;
+          handsShaking = true;
+        }
+      }
+      
+      if (handsShaking) {
+        clientX = 150 + Math.sin(Date.now() * 0.01) * 5;
+        lawyerX = 250 + Math.sin(Date.now() * 0.01 + Math.PI) * 5;
+        
+        // Spawn particles
+        if (Math.random() < 0.3) {
+          particles.push(new HandshakeParticle(200 + (Math.random() - 0.5) * 40, 150 + (Math.random() - 0.5) * 40));
+        }
+      }
+      
+      // Draw hands
+      drawHand(clientX, clientY);
+      drawHand(lawyerX, lawyerY, true);
+      
+      // Draw particles
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      
+      requestAnimationFrame(animateHandshake);
+    }
+
+    // Start handshake animation
+    setTimeout(() => { handsApproaching = true; }, 500);
+    animateHandshake();
+
+    // ==================== CHAT FUNCTIONALITY ====================
+    const API_URL = 'http://localhost:5000/api';
+    const CHAT_API_URL = 'http://localhost:5001/api';
+    const chatWindow = document.getElementById('chatWindow');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+
+    function toggleChat() { chatWindow.classList.toggle('open'); }
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = chatInput.value.trim();
+      if (!query) return;
+      addMessage(query, 'user');
+      chatInput.value = '';
+      addLoading();
+      try {
+        const response = await fetch(`${CHAT_API_URL}/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
+        removeLoading();
+        if (response.ok) {
+          const data = await response.json();
+          addMessage(data.response.answer, 'bot', data.response);
+        } else { addMessage('Error. Try again.', 'bot'); }
+      } catch (err) { removeLoading(); addMessage('Connection error. Make sure servers are running.', 'bot'); }
+    });
+
+    function addMessage(text, sender, data = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = sender === 'user' ? 'flex justify-end' : 'flex items-start gap-2';
+      if (sender === 'user') {
+        msgDiv.innerHTML = `<div class="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]"><p class="text-sm">${text}</p></div>`;
+      } else {
+        let extra = data ? `<div class="mt-2 flex flex-wrap gap-2">${data.ipc_sections?.map(s => `<span class="text-xs px-2 py-1 rounded-full bg-blue-500/30 text-blue-200 font-mono">IPC ${s}</span>`).join('') || ''}</div>` : '';
+        msgDiv.innerHTML = `<div class="bg-white/10 border border-white/20 rounded-lg p-3 max-w-[80%]"><p class="text-sm text-white whitespace-pre-wrap">${text}</p>${extra}</div>`;
+      }
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addLoading() {
+      const d = document.createElement('div');
+      d.id = 'cLoading';
+      d.className = 'flex items-start gap-2';
+      d.innerHTML = `<div class="bg-white/10 rounded-lg p-3"><div class="flex gap-1"><div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div><div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div></div></div>`;
+      chatMessages.appendChild(d);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    function removeLoading() { document.getElementById('cLoading')?.remove(); }
+
+    // ==================== UPLOAD FUNCTIONALITY ====================
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const results = document.getElementById('results');
+    const questionsList = document.getElementById('questionsList');
+
+    dropZone?.addEventListener('click', () => fileInput.click());
+    fileInput?.addEventListener('change', handleUpload);
+
+    async function handleUpload() {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('policy_type', document.getElementById('policyType').value);
+      formData.append('user_id', 'demo-user');
+      loading.classList.remove('hidden');
+      error.classList.add('hidden');
+      results.classList.add('hidden');
+      try {
+        const response = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Upload failed');
+        displayResults(data.analysis);
+      } catch (err) { error.textContent = err.message; error.classList.remove('hidden'); }
+      finally { loading.classList.add('hidden'); }
+    }
+
+    function displayResults(analysis) {
+      questionsList.innerHTML = '';
+      if (analysis?.questions) {
+        analysis.questions.forEach(q => {
+          const colors = { high: 'bg-red-500/30 text-red-200 border-red-500/50', medium: 'bg-yellow-500/30 text-yellow-200 border-yellow-500/50', low: 'bg-green-500/30 text-green-200 border-green-500/50' };
+          const card = document.createElement('div');
+          card.className = 'glass rounded-xl p-6';
+          card.innerHTML = `<div class="flex gap-3 mb-3"><span class="px-3 py-1 rounded-full text-xs font-semibold border ${colors[q.risk_level] || colors.low}">${(q.risk_level||'low').toUpperCase()} RISK</span><span class="px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-xs font-semibold">${q.category||'general'}</span></div><p class="text-lg font-semibold text-white mb-4">${q.question}</p><div class="flex flex-wrap gap-2 mb-4">${(q.ipc_sections?.sections||[]).map(s=>`<span class="bg-blue-500/20 border border-blue-500/50 rounded-lg px-3 py-1 text-sm font-mono text-blue-200">IPC ${s}</span>`).join('')}</div>${q.ipc_sections?.explanation?`<p class="text-gray-300 text-sm leading-relaxed">${q.ipc_sections.explanation}</p>`:''}`;
+          questionsList.appendChild(card);
+        });
+      } else { questionsList.innerHTML = '<p class="text-white">No results.</p>'; }
+      results.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

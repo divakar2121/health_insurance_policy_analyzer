@@ -1,0 +1,44 @@
+# Insurance Policy Analyzer - Commands to Run
+
+# ============================================
+# TERMINAL 1 - Main App (Port 5000)
+# ============================================
+cd /home/deva/ai_test/rag_bot/insurance-ai-webapp
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate ai
+python app.py
+
+# Access: http://localhost:5000
+
+
+# ============================================
+# TERMINAL 2 - AI Legal Agent (Port 5001)
+# ============================================
+cd /home/deva/ai_test/rag_bot/insurance-ai-webapp
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate ai
+python legal_agent.py
+
+# Access: http://localhost:5001 (via chat bot)
+
+
+# ============================================
+# OTHER USEFUL COMMANDS
+# ============================================
+
+# Check if server is running
+curl http://localhost:5000/health
+curl http://localhost:5001/health
+
+# Test upload API
+curl -X POST -F "file=@Dummy_Health_Policy_Specimen.pdf" -F "policy_type=health" -F "user_id=test" http://localhost:5000/api/upload
+
+# Test AI Agent query
+curl -X POST http://localhost:5001/api/query -H "Content-Type: application/json" -d '{"query": "What are the key exclusions in health insurance?"}'
+
+# View saved queries
+curl http://localhost:5001/api/queries
+
+# Kill running servers
+pkill -f "python app.py"
+pkill -f "python legal_agent.py"
